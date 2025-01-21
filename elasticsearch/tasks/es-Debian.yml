@@ -1,0 +1,49 @@
+---
+# Download elasticsearch key
+- name: Apt signing key
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+# Install apt-transports package required for Installation of Elasticsearch
+- name: Install apt-transports
+  apt:
+    name: apt-transport-https
+    state: present
+    update_cache: true
+
+# Download elasticsearch repository
+- name: Add specified repository into sources list
+  apt_repository:
+    repo: "deb {{ repo_burl }}/{{ major_revision }}.x/apt stable main"
+    state: present
+
+# enable openfile limit without restart
+- name: Enable open file witout restart
+  shell: "ulimit -n 4096"
+  changed_when: true
+
+# Install deb file elasticsearch
+- name: Install elasticsearch
+  apt:
+    name: "elasticsearch={{ elasticsearch_version }}"
+    state: present
+    update_cache: true
+
+# Create directory for es_data and heap_dump storage
+- name: Create data_path directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: 0775
+    recurse: "yes"
+  with_items:
+    - "{{ data_path }}"
+    - "{{ es_jvm_dump }}"
+  notify:
+    - restart elasticsearch
+
+- name: Reload systemd before restarting elasticsearch
+  meta: flush_handlers

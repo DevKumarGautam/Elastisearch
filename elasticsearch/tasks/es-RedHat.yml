@@ -1,0 +1,48 @@
+---
+# Download elasticsearch key
+- name: Import a key from a file
+  rpm_key:
+    state: present
+    key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+# enable openfile limit without restart
+- name: Enable open file witout restart
+  shell: "ulimit -n 4096"
+  changed_when: true
+
+# Download elasticsearch repo
+- name: Add multiple repositories into the same file (1/2)
+  yum_repository:
+    name: elasticsearch
+    description: "Elasticsearch repository for {{ major_revision }}.x packages"
+    baseurl: "https://artifacts.elastic.co/packages/{{ major_revision }}.x/yum"
+    gpgcheck: true
+    gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    enabled: false
+
+# Install rpm file elasticsearch
+- name: Install elasticsearch
+  yum:
+    name: "elasticsearch-{{ elasticsearch_version }}"
+    state: present
+    enablerepo: elasticsearch
+  notify:
+    - restart elasticsearch
+
+# Create directory for es_data and heap_dump storage
+- name: Create data_path directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: 0775
+    recurse: "yes"
+  with_items:
+    - "{{ data_path }}"
+    - "{{ es_jvm_dump }}"
+  notify:
+    - restart elasticsearch
+
+- name: Reload systemd before restarting elasticsearch
+  meta: flush_handlers

@@ -1,0 +1,7 @@
+---
+# Static value ####
+esurl: "elasticsearch/elasticsearch-{{ elasticsearch_version }}"
+es_s: "elasticsearch.service"
+es: "elasticsearch"
+
+repo_burl: https://artifacts.elastic.co/packages
